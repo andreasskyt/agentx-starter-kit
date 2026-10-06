@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Small helper for the AgentX web API. Needs AGENTX_API_KEY in the environment.
+# Usage:
+#   ax-api agents
+#   ax-api bubbles
+#   ax-api new-bubble <bubble> <anchor-agent>
+#   ax-api send <agent> <bubble> "<message>"     (creates the bubble if missing)
+#   ax-api output <agent> <bubble> [lines]
+set -euo pipefail
+: "${AGENTX_API_KEY:?Set AGENTX_API_KEY first (see docs/06-api.md)}"
+base="${AGENTX_API_BASE:-https://www.agentxhq.com/api/v1}"
+
+call() { # method path [json]
+  local args=(-sS -X "$1" "$base/$2" -H "Content-Type: application/json" -H @-)
+  [[ -n "${3:-}" ]] && args+=(--data "$3")
+  curl "${args[@]}" <<< "Authorization: Bearer $AGENTX_API_KEY"
+}
+json() { python3 -c 'import json,sys; print(json.dumps(dict(zip(sys.argv[1::2], sys.argv[2::2]))))' "$@"; }
+pretty() { python3 -m json.tool 2>/dev/null || cat; }
+
+case "${1:-}" in
+  agents)     call GET agents | pretty ;;
+  bubbles)    call GET bubbles | pretty ;;
+  new-bubble) call POST bubbles "$(json name "${2:?bubble}" anchor_agent "${3:?agent}")" | pretty ;;
+  send)
+    agent="${2:?agent}"; bubble="${3:?bubble}"; msg="${4:?message}"
+    body=$(python3 -c 'import json,sys; print(json.dumps({"agent":sys.argv[1],"bubble":sys.argv[2],"message":sys.argv[3],"start":True}))' "$agent" "$bubble" "$msg")
+    res=$(call POST messages "$body")
+    if grep -q NOT_FOUND <<< "$res"; then
+      call POST bubbles "$(json name "$bubble" anchor_agent "$agent")" >/dev/null
+      res=$(call POST messages "$body")
+    fi
+    pretty <<< "$res" ;;
+  output)
+    body=$(python3 -c 'import json,sys; print(json.dumps({"agent":sys.argv[1],"bubble":sys.argv[2],"lines":int(sys.argv[3])}))' "${2:?agent}" "${3:?bubble}" "${4:-60}")
+    call POST output "$body" | pretty ;;
+  *) sed -n '2,9p' "$0"; exit 1 ;;
+esac

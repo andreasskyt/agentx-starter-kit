@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Posts a message to the calling agent's own Slack channel (config in ~/.slack.env, written by provision-agent.sh).
+# Prints the posted message's ts (use it with --thread to reply under it).
+# Usage: slack-post [--urgent] [--channel <id>] [--thread <ts>] "text"   (or text on stdin)
+#   --urgent        mention the owner
+#   --thread <ts>   reply in that Slack thread
+#   --channel <id>  post in that channel or DM instead of the agent's own channel
+set -euo pipefail
+source "$HOME/.slack.env"
+
+mention=""; thread=""
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --urgent) mention="<@$SLACK_OWNER> "; shift ;;
+    --thread) thread="${2:?--thread needs a ts}"; shift 2 ;;
+    --channel) SLACK_CHANNEL="${2:?--channel needs an id}"; shift 2 ;;
+    *) echo "unknown option $1" >&2; exit 1 ;;
+  esac
+done
+text="${1:-$(cat)}"
+
+payload=$(CH="$SLACK_CHANNEL" TEXT="$mention$text" NAME="${SLACK_USERNAME:-}" THREAD="$thread" python3 -c \
+  'import json, os; m = {"channel": os.environ["CH"], "text": os.environ["TEXT"], "unfurl_links": False}; m.update({"username": os.environ["NAME"]} if os.environ["NAME"] else {}); m.update({"thread_ts": os.environ["THREAD"]} if os.environ["THREAD"] else {}); print(json.dumps(m))')
+
+curl -sS -X POST https://slack.com/api/chat.postMessage \
+  -H "Content-Type: application/json; charset=utf-8" -H @- --data "$payload" \
+  <<< "Authorization: Bearer $SLACK_BOT_TOKEN" \
+  | python3 -c 'import json, sys; r = json.load(sys.stdin); print(r.get("ts", "")) if r.get("ok") else None; sys.exit(0 if r.get("ok") else "Slack error: " + str(r.get("error")))'

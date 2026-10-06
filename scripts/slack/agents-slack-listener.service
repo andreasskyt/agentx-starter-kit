@@ -1,0 +1,21 @@
+[Unit]
+Description=AgentX agents Slack listener (Socket Mode, one connection per agent app)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=agents-slack-listener
+Group=agents-slack-listener
+Environment=OWNER_NAME=@OWNER_NAME@
+Environment=TZ_NAME=@TZ_NAME@
+ExecStart=/opt/agents-slack-listener/venv/bin/python /usr/local/bin/agent-listener
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/etc/agents/listener
+
+[Install]
+WantedBy=multi-user.target

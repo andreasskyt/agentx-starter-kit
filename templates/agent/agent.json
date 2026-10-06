@@ -1,0 +1,8 @@
+{
+  "role": "<role>",
+  "persona": "<Persona>",
+  "agentx_agent": "<Persona>",
+  "linux_user": "agentx-<persona>",
+  "slack_channel": "#<persona>-<role>",
+  "slack_channel_id": ""
+}

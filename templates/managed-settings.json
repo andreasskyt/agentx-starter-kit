@@ -1,0 +1,39 @@
+{
+  "disableClaudeAiConnectors": true,
+  "env": {
+    "ENABLE_CLAUDEAI_MCP_SERVERS": "false"
+  },
+  "allowManagedPermissionRulesOnly": true,
+  "allowManagedMcpServersOnly": true,
+  "allowedMcpServers": [
+    {
+      "serverCommand": [
+        "/usr/local/bin/agentx"
+      ]
+    }
+  ],
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "allow": [
+      "mcp__agentx",
+      "Edit(~/outputs/**)",
+      "Edit(~/state/**)",
+      "Bash(slack-post *)"
+    ],
+    "deny": [
+      "WebFetch",
+      "WebSearch",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(sftp *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(systemctl *)",
+      "Bash(apt *)",
+      "Bash(apt-get *)",
+      "Edit(~/CLAUDE.md)",
+      "Edit(~/.claude/**)",
+      "Edit(~/.slack.env)"
+    ]
+  }
+}

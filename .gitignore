@@ -1,0 +1,10 @@
+# Local progress notes and anything personal stay out of git
+local/
+*.env
+.env*
+*.pem
+*.key
+*credentials*.json
+*oauth*.json
+*token*.json
+.DS_Store
